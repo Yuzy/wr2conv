@@ -1,0 +1,119 @@
+#!/usr/bin/env node
+
+var fs = require('fs');
+var path = require('path');
+var minimist = require('minimist');
+var wr2conv = require('../');
+var chalk = require('chalk');
+
+var argv;
+
+function convFile(file) {
+	var data = fs.readFileSync(file);
+	if((result = file.match(/\.(html|htm|css|js)$/)) !== null) {
+		data = wr2conv(data.toString(),result[1]);
+	}else{
+		data = wr2conv(data.toString());
+	}
+	if(argv.output) {
+		var filename = getFileName(file);
+		if(!fs.existsSync(argv.output)){
+			fs.mkdirSync(argv.output);
+		}
+		var output_file = argv.output + ((argv.output.substr(-1) != "/") ? "/" : "") + filename;
+		fs.writeFileSync(output_file, data);
+	}else{
+		fs.writeFileSync(file, data);
+	}
+}
+
+function getFileName(file) {
+	return file.split('/').pop();
+}
+
+function help(){
+	fs.createReadStream(__dirname + '/help.txt').pipe(process.stdout);
+}
+
+function main(arg, callback){
+	argv = minimist(process.argv.slice(2), {
+		string: ['output','linkpath'],
+		boolean: [
+			'help',
+			'version',
+			'quiet'
+		],
+		alias: {
+			h: 'help',
+			o: 'output',
+			l: 'linkpath',
+			q: 'quiet',
+			v: 'version'
+		},
+		default: {
+			help: false,
+			vertion: false,
+			quiet: false
+		}
+	});
+
+	if(argv.help) {
+		help();
+		return;
+	}
+
+	if(argv.version){
+		process.stdout.write('v' + wr2conv.version + '\n');
+		return;
+	}
+
+	if(argv.linkpath) {
+		wr2conv.setOptions({linkpath: argv.linkpath});
+	}
+
+	var files = argv._.slice();
+	if(files.length){
+		for(var i in files) {
+			var file = files[i];
+			var result;
+			var stats;
+
+			if(!fs.exists(file) && !argv.quiet){
+				process.stdout.write('Source file ' + chalk.cyan(file) + ' is not found.\n');
+				return false;
+			}
+
+			if(file.indexOf('*') !== -1){
+
+			}else{
+				stats = fs.statSync(file);
+				if(stats.isDirectory()) {
+					var files = fs.readdirSync(file);
+					for(var i in files) {
+						var buf = files[i];
+						convFile(buf);
+					}
+				}else{
+					convFile(file);
+				}
+			}
+		}
+		if(callback){
+			callback();
+		}
+	}else{
+		if(!argv.quiet){
+			process.stdout.write('Source file is empty.\n\n');
+		}
+	}
+}
+
+if (!module.parent) {
+	process.title = 'wr2conv';
+	main(process.argv.slice(), function(err, code) {
+		if (err) throw err;
+		return process.exit(code || 0);
+	});
+} else {
+	module.exports = main;
+}
