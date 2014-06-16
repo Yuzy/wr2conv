@@ -83,7 +83,7 @@ function convertHTML(src) {
 				var keyValue = [];
 				for(var key in tag.attributes) {
 					if(key == 'src'){
-						keyValue.push('src="%' + resource + '"');
+						keyValue.push('src="%' + resource + '%"');
 					}else if(key == 'width' || key == 'height') {
 						keyValue.push(key + '="%' + key + '(' + resource + ')%"');
 					}else{
