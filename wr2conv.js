@@ -124,7 +124,7 @@ function convertHTML(src) {
 				continue;
 			}
 			result += capture[0];
-			src = src.substring(capture.index + capture[0].length + 1);
+			src = src.substring(capture.index + capture[0].length);
 			continue;
 		}
 		if(src) {

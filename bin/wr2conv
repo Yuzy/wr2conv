@@ -78,15 +78,15 @@ function main(arg, callback){
 			var result;
 			var stats;
 
-			if(!fs.exists(file) && !argv.quiet){
-				process.stdout.write('Source file ' + chalk.cyan(file) + ' is not found.\n');
-				return false;
-			}
-
 			if(file.indexOf('*') !== -1){
 
 			}else{
-				stats = fs.statSync(file);
+				try{
+					stats = fs.statSync(file);
+				} catch(e){
+					process.stdout.write('Source file ' + chalk.cyan(file) + ' is not found.\n');
+					return false;
+				}
 				if(stats.isDirectory()) {
 					var files = fs.readdirSync(file);
 					for(var i in files) {
