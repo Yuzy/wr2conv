@@ -1,16 +1,16 @@
 {
   "name": "wr2conv",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Convert HTML/CSS/JS file(s) to WebRelease2 template valid code",
   "main": "wr2conv.js",
   "bin": "./bin/wr2conv",
-	"repository": {
-		"type": "git",
-		"url": "git://github.com/yuzy/wr2conv"
-	},
-	"bugs": {
-		"url": "git://github.com/yuzy/wr2conv/issues"
-	},
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/yuzy/wr2conv"
+  },
+  "bugs": {
+    "url": "git://github.com/yuzy/wr2conv/issues"
+  },
   "keywords": [
     "WebRelease2",
     "WR2"
@@ -20,5 +20,8 @@
   "dependencies": {
     "minimist": "~0.1.0",
     "chalk": "^0.4.0"
+  },
+  "devDependencies": {
+    "grunt-release": "~0.7.0"
   }
 }
