@@ -1,6 +1,6 @@
 {
   "name": "wr2conv",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Convert HTML/CSS/JS file(s) to WebRelease2 template valid code",
   "main": "wr2conv.js",
   "bin": "./bin/wr2conv",
