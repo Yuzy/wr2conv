@@ -1,1 +1,10 @@
-usage: wr2conv {OPTIONS} {INPUT}
+USAGE
+$ wr2conv {OPTIONS} {INPUT}
+
+OPTIONS
+    -h,   --help              show this help
+    -o,   --output            set output directory
+    -v,   --version           show version
+    -d,   --dry               dry run
+    -c,   --check-resource    check resources(images)
+

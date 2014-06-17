@@ -2,7 +2,9 @@
 
 var version = '0.1.0';
 
-var path = require('path');
+if(!path){
+	var path = require('path');
+}
 
 var patterns = {
 	html: /<(DOCTYPE|html).+?>/i,
@@ -10,8 +12,117 @@ var patterns = {
 	css: /(@charset|html,|body,)/i
 }
 
+var conv_options = {};
+var all_images = [];
+var filepath;
+var basepath;
+
+function convertHTML(src) {
+	var reg = /<(\w+) (.*?)(\/?)>/;
+	var capture;
+	var result = '';
+
+	while(src) {
+		var resource = '';
+		if(capture = reg.exec(src)) {
+			result += src.substr(0,capture.index);
+
+			var target = capture[0];
+			var tag = resolveTag(target);
+
+			if(tag.tagName == 'img'){
+				if('src' in tag.attributes) {
+					var filepath = tag.attributes.src;
+					resource = getResourceName(filepath);
+					setResource(filepath);
+
+					var keyValue = [];
+					for(var key in tag.attributes) {
+						if(key == 'src'){
+							keyValue.push('src="%' + resource + '%"');
+						}else if(key == 'width' || key == 'height') {
+							keyValue.push(key + '="%' + key + '(' + resource + ')%"');
+						}else{
+							if(tag.attributes[key]){
+								keyValue.push(key + '="' + tag.attributes[key] + '"');
+							}else{
+								keyValue.push(key);
+							}
+						}
+					}
+					result += '<' + tag.tagName + ' ' + keyValue.join(' ') + tag.xhtml + '>';
+				}else{
+					result += target;
+				}
+				src = src.substring(capture.index + capture[0].length);
+
+				continue;
+			}
+			if(tag.tagName == 'style'){
+				result += capture[0];
+				src = src.substring(capture.index + capture[0].length);
+
+				var css_end = /<\/style>/.exec(src);
+				var css = convertCSS(src.substring(0,css_end.index));
+
+				result += css + css_end[0];
+				src = src.substring(css_end.index + css_end[0].length);
+
+				continue;
+			}
+			if(tag.tagName == 'script'){
+				if('src' in tag.attributes) {
+					resource = '%js.' + getResourceName(tag.attributes.src) + '%';
+					result += capture[0].replace(tag.attributes.src, resource);
+					src = src.substring(capture.index + capture[0].length);
+				}else{
+					result += capture[0];
+					src = src.substring(capture.index + capture[0].length);
+
+					var js_end = /<\/script>/.exec(src);
+					var js = convertJS(src.substring(0,js_end.index));
+
+					result += js + js_end[0];
+					src = src.substring(js_end.index + js_end[0].length);
+				}
+				continue;
+			}
+			if('href' in tag.attributes || 'src' in tag.attributes){
+				if('href' in tag.attributes) {
+					if(path.extname(tag.attributes.href) == ".css"){
+						resource = '%css.' + getResourceName(tag.attributes.href) + '%';
+					}else if(tag.tagName != 'a'){
+						resource = '%' + getResourceName(tag.attributes.href) + '%';
+					}
+				} else if('src' in tag.attributes) {
+					if(path.extname(tag.attributes.src) == ".js"){
+						resource = '%js.' + getResourceName(tag.attributes.src) + '%';
+					}
+				}
+				if(resource){
+					result += capture[0].replace(tag.attributes.href, resource);
+				}else{
+					result += capture[0];
+				}
+				src = src.substring(capture.index + capture[0].length);
+				continue;
+			}
+
+			result += capture[0];
+			src = src.substring(capture.index + capture[0].length);
+			continue;
+		}
+		if(src) {
+			result += src;
+			src = '';
+		}
+	}
+
+	return result;
+}
+
 function convertCSS(src) {
-	var reg = /url\(('|")?([^'"]+)('|")?\)/;
+	var reg = /url\(('|")?([^'"\)]+)('|")?\)?/;
 	var capture;
 	var result = '';
 
@@ -20,6 +131,7 @@ function convertCSS(src) {
 			result += src.substr(0,capture.index);
 			var target = capture[0];
 			var resource = getResourceName(capture[2]);
+			setResource(capture[2]);
 			result += target.replace(capture[2],'%'+resource+'%');
 			src = src.substring(capture.index + capture[0].length);
 			continue;
@@ -31,6 +143,31 @@ function convertCSS(src) {
 	}
 
 	return result;
+}
+
+function convertJS(src) {
+	return src;
+}
+
+function convertText(src) {
+	return src;
+}
+
+function setResource(src){
+	var src_path;
+	if(conv_options.basedir) {
+		src_path = path.resolve(basepath, src).replace(conv_options.basedir,'');
+	}else{
+		src_path = path.resolve(basepath, src).replace(path.resolve('./'),'');
+	}
+	if(all_images.indexOf(src_path) === -1){
+		all_images.push(src_path);
+	}
+}
+
+function getResourceName(filepath){
+	var file = path.basename(filepath,path.extname(filepath));
+	return file.replace(/-/g,'_').replace(/\./,'_');
 }
 
 function resolveTag(tag){
@@ -61,94 +198,6 @@ function resolveTag(tag){
 	return false;
 }
 
-function convertHTML(src) {
-//	var reg = /<img(.+?)>/;
-	var reg = /<(\w+) (.*?)(\/?)>/;
-	var capture;
-	var result = '';
-
-	while(src) {
-		if(capture = reg.exec(src)) {
-			result += src.substr(0,capture.index);
-
-			var target = capture[0];
-			var tag = resolveTag(target);
-
-			if(tag.tagName == 'img'){
-				var resource;
-				if('src' in tag.attributes) {
-					var filepath = tag.attributes.src;
-					var resource = getResourceName(filepath);
-				}
-				var keyValue = [];
-				for(var key in tag.attributes) {
-					if(key == 'src'){
-						keyValue.push('src="%' + resource + '%"');
-					}else if(key == 'width' || key == 'height') {
-						keyValue.push(key + '="%' + key + '(' + resource + ')%"');
-					}else{
-						if(tag.attributes[key]){
-							keyValue.push(key + '="' + tag.attributes[key] + '"');
-						}else{
-							keyValue.push(key);
-						}
-					}
-				}
-				result += '<' + tag.tagName + ' ' + keyValue.join(' ') + tag.xhtml + '>';
-				src = src.substring(capture.index + capture[0].length);
-
-				continue;
-			}
-			if(tag.tagName == 'style'){
-				result += capture[0];
-				src = src.substring(capture.index + capture[0].length);
-
-				var css_end = /<\/style>/.exec(src);
-				var css = convertCSS(src.substring(0,css_end.index));
-
-				result += css + css_end[0];
-				src = src.substring(css_end.index + css_end[0].length);
-
-				continue;
-			}
-			if(tag.tagName == 'script'){
-				result += capture[0];
-				src = src.substring(capture.index + capture[0].length);
-
-				var js_end = /<\/script>/.exec(src);
-				var js = convertJS(src.substring(0,js_end.index));
-
-				result += js + js_end[0];
-				src = src.substring(js_end.index + js_end[0].length);
-
-				continue;
-			}
-			result += capture[0];
-			src = src.substring(capture.index + capture[0].length);
-			continue;
-		}
-		if(src) {
-			result += src;
-			src = '';
-		}
-	}
-
-	return result;
-}
-
-function convertJS(src) {
-	return src;
-}
-
-function convertText(src) {
-	return src;
-}
-
-function getResourceName(filepath){
-	var file = path.basename(filepath,path.extname(filepath));
-	return file.replace('-','_').replace('.','_');
-}
-
 function merge(obj) {
 	var i = 1
 		, target
@@ -166,7 +215,21 @@ function merge(obj) {
 	return obj;
 }
 
-var wr2conv = function(src,type){
+var wr2conv = function(src,file){
+	all_images = [];
+
+	var type;
+
+	if(file) {
+		filepath = file;
+		basepath = path.dirname(file);
+
+		var result;
+		if((result = file.match(/\.(html|htm|css|js)$/)) !== null) {
+			type = result[1];
+		}
+	}
+
 	if(!type){
 		var buf = src.replace(/^ +/,'').substring(0,100);
 		if(patterns.html.test(buf)){
@@ -202,13 +265,100 @@ var wr2conv = function(src,type){
 	return src;
 }
 
+var rep_images_count = [];
+var rep_src_images = [];
+
+wr2conv.pushResource = function(){
+	all_images.forEach(function(image,index,images_array) {
+		if(rep_images_count[image]){
+			rep_images_count[image]++;
+		}else{
+			rep_images_count[image] = 1;
+		}
+	});
+	rep_src_images[filepath] = all_images;
+}
+
+wr2conv.getResourceInfo = function(){
+	var resources = {
+		site: [],
+		file: {}
+	};
+
+	for(var i in rep_images_count) {
+		if(rep_images_count[i] > 1){
+			resources.site.push(i);
+		}
+	}
+
+	for(var i in rep_src_images){
+		var file = i;
+		var images = rep_src_images[i];
+		var file_images = images.filter(function(value,index,array){
+			return (resources.site.indexOf(value) === -1) ? true : false;
+		});
+		resources.file[file] = file_images;
+	}
+	return resources;
+}
+
+wr2conv.getResourceReport = function(){
+	var info = this.getResourceInfo();
+
+	var date = new Date();
+	var date_string = date.getFullYear() + "/" + (date.getMonth()+1) + "/" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+	var report = "============================================================================\n" +
+		" File resource check report\n" +
+		" Generated : " + date_string + "\n" +
+		"============================================================================\n\n\n";
+
+
+	report += "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n";
+	report += " Site resource\n";
+	report += "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n\n";
+	if(info.site.length){
+		info.site.forEach(function(value,index,array){
+			report += "  " + value + "\n";
+		});
+	}else{
+		report += "  No image\n\n";
+	}
+	report += "----------------------------------------------------------------\n";
+	report += "  Total : " + info.site.length + " file(s)\n\n\n\n"
+
+	report += "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n";
+	report += " Template resource\n";
+	report += "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n\n";
+	for(var i in info.file){
+		var src = i;
+		var files = info.file[i];
+		report += "----------------------------------------------------------------\n";
+		report += " " + src + "\n";
+		report += "----------------------------------------------------------------\n";
+		if(files.length) {
+			files.forEach(function(value,index,array){
+				report += "  " + value + "\n";
+			});
+			report += "----------------------------------------------------------------\n";
+			report += "  Total : " + files.length + " file(s)\n\n\n";
+		}else {
+			report += "  No image\n\n";
+		}
+	}
+
+	report += "Report end.";
+
+	return report;
+}
+
 wr2conv.setOptions = function(options) {
-	merge(wr2conv.defaults, options);
+	conv_options = merge(wr2conv.defaults, conv_options, options);
 	return wr2conv;
 };
 
 wr2conv.defaults = {
-	linkpath: ''
+	linkpath: '',
+	basedir: ''
 };
 
 wr2conv.version = version;

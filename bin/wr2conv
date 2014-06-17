@@ -9,26 +9,33 @@ var chalk = require('chalk');
 var argv;
 
 function convFile(file) {
-	var data = fs.readFileSync(file);
-	if((result = file.match(/\.(html|htm|css|js)$/)) !== null) {
-		data = wr2conv(data.toString(),result[1]);
-	}else{
-		data = wr2conv(data.toString());
-	}
+	var src= fs.readFileSync(file);
+	var result = wr2conv(src.toString(),file);
+	var output_file;
+
 	if(argv.output) {
-		var filename = getFileName(file);
+		var filename = path.basename(file);
 		if(!fs.existsSync(argv.output)){
 			fs.mkdirSync(argv.output);
 		}
-		var output_file = argv.output + ((argv.output.substr(-1) != "/") ? "/" : "") + filename;
-		fs.writeFileSync(output_file, data);
+		output_file = path.resolve(argv.output, filename);
 	}else{
-		fs.writeFileSync(file, data);
+		output_file = file;
 	}
-}
-
-function getFileName(file) {
-	return file.split('/').pop();
+	try{
+		if(argv.dry) {
+			process.stdout.write(chalk.red("Dry:"));
+		}else{
+			fs.writeFileSync(output_file, result);
+		}
+		process.stdout.write('File ' + chalk.cyan(file) + ' saved.\n');
+	} catch(e){
+		process.stdout.write(chalk.red("Save file ") + chalk.cyan(value) + chalk.red(' is faild.') + "\n");
+		return;
+	}
+	if(argv['check-resource']){
+		wr2conv.pushResource();
+	}
 }
 
 function help(){
@@ -37,23 +44,28 @@ function help(){
 
 function main(arg, callback){
 	argv = minimist(process.argv.slice(2), {
-		string: ['output','linkpath'],
+		string: ['output','ext','basedir'],
 		boolean: [
 			'help',
 			'version',
-			'quiet'
+			'dry',
+			'check-resource'
 		],
 		alias: {
 			h: 'help',
 			o: 'output',
-			l: 'linkpath',
-			q: 'quiet',
-			v: 'version'
+			v: 'version',
+			d: 'dry',
+			c: 'check-resource',
+			e: 'ext',
+			b: 'basedir'
 		},
 		default: {
-			help: false,
-			vertion: false,
-			quiet: false
+			help            : false,
+			vertion         : false,
+			quiet           : false,
+			dry             : false,
+			'check-resource': false
 		}
 	});
 
@@ -67,45 +79,69 @@ function main(arg, callback){
 		return;
 	}
 
-	if(argv.linkpath) {
-		wr2conv.setOptions({linkpath: argv.linkpath});
+	if(argv.basedir){
+		wr2conv.setOptions({basedir: path.resolve(argv.basedir)});
 	}
 
 	var files = argv._.slice();
-	if(files.length){
-		for(var i in files) {
-			var file = files[i];
-			var result;
-			var stats;
 
-			if(file.indexOf('*') !== -1){
+	if(!files.length){
+		process.stdout.write(chalk.red('Source file is empty.\n'));
+		return;
+	}
 
+	var result = getFileList(files);
+	result.forEach(function(file,index,array){
+		convFile(file);
+	});
+
+	if(argv['check-resource']){
+		var report = wr2conv.getResourceReport();
+		var report_file;
+		if(argv.output){
+			report_file = path.relative('./',path.resolve(argv.output, "./report.txt"));
+		}else{
+			report_file = "./report.txt";
+		}
+		fs.writeFileSync(report_file, report);
+		process.stdout.write(
+				"Generate report file : " +
+				chalk.cyan(report_file +"\n"));
+	}
+
+	if(callback){
+		callback();
+	}
+}
+
+function getFileList(files){
+	var list = [];
+	files.forEach(function(value,index,array){
+		var stats;
+		try{
+			stats = fs.statSync(value);
+		} catch(e){
+			process.stdout.write(chalk.red('Source file ') + chalk.cyan(value) + chalk.red(' is not found.') + "\n");
+			return false;
+		}
+
+		if(stats.isDirectory()) {
+			var sub_files = fs.readdirSync(value);
+			var result = getFileList(sub_files);
+			if(result.length){
+				Array.prototype.push.apply(list,result);
+			}
+		}else{
+			if(argv.ext){
+				if(path.extname(value).replace('.','') == argv.ext){
+					list.push(value);
+				}
 			}else{
-				try{
-					stats = fs.statSync(file);
-				} catch(e){
-					process.stdout.write('Source file ' + chalk.cyan(file) + ' is not found.\n');
-					return false;
-				}
-				if(stats.isDirectory()) {
-					var files = fs.readdirSync(file);
-					for(var i in files) {
-						var buf = files[i];
-						convFile(buf);
-					}
-				}else{
-					convFile(file);
-				}
+				list.push(value);
 			}
 		}
-		if(callback){
-			callback();
-		}
-	}else{
-		if(!argv.quiet){
-			process.stdout.write('Source file is empty.\n\n');
-		}
-	}
+	});
+	return list;
 }
 
 if (!module.parent) {
