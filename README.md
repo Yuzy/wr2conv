@@ -4,7 +4,7 @@
 
 ## Install
 
-`npm install --save wr2conv`
+`npm install -g wr2conv`
 
 ## Usage
 

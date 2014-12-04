@@ -90,6 +90,7 @@ function main(arg, callback){
 		return;
 	}
 
+	wr2conv.clearResourceInfo();
 	var result = getFileList(files);
 	result.forEach(function(file,index,array){
 		convFile(file);

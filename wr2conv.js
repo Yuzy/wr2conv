@@ -10,7 +10,7 @@ var patterns = {
 	html: /<(DOCTYPE|html).+?>/i,
 	javascript: /(var|function|=)/i,
 	css: /(@charset|html,|body,)/i
-}
+};
 
 var conv_options = {};
 var all_images = [];
@@ -268,6 +268,11 @@ var wr2conv = function(src,file){
 var rep_images_count = [];
 var rep_src_images = [];
 
+wr2conv.clearResourceInfo = function(){
+	rep_images_count = [];
+	rep_src_images = [];
+};
+
 wr2conv.pushResource = function(){
 	all_images.forEach(function(image,index,images_array) {
 		if(rep_images_count[image]){
@@ -277,7 +282,7 @@ wr2conv.pushResource = function(){
 		}
 	});
 	rep_src_images[filepath] = all_images;
-}
+};
 
 wr2conv.getResourceInfo = function(){
 	var resources = {
@@ -300,7 +305,7 @@ wr2conv.getResourceInfo = function(){
 		resources.file[file] = file_images;
 	}
 	return resources;
-}
+};
 
 wr2conv.getResourceReport = function(){
 	var info = this.getResourceInfo();
@@ -349,7 +354,7 @@ wr2conv.getResourceReport = function(){
 	report += "Report end.";
 
 	return report;
-}
+};
 
 wr2conv.setOptions = function(options) {
 	conv_options = merge(wr2conv.defaults, conv_options, options);
