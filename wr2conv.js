@@ -32,14 +32,26 @@ function convertHTML(src) {
 
 			if(tag.tagName == 'img'){
 				if('src' in tag.attributes) {
+					var file_flag = true;
 					var filepath = tag.attributes.src;
-					resource = getResourceName(filepath);
-					setResource(filepath);
+					
+					if(filepath.substr(0,4) == 'http' || filepath.substr(0,2) == '//'){
+						file_flag = false;
+					}
+
+					if(file_flag){
+						resource = getResourceName(filepath);
+						setResource(filepath);
+					}
 
 					var keyValue = [];
 					for(var key in tag.attributes) {
 						if(key == 'src'){
-							keyValue.push('src="%' + resource + '%"');
+							if(file_flag){
+								keyValue.push('src="%' + resource + '%"');
+							}else{
+								keyValue.push('src="' + filepath + '"');
+							}
 						}else if(key == 'width' || key == 'height') {
 							keyValue.push(key + '="%' + key + '(' + resource + ')%"');
 						}else{
@@ -72,8 +84,13 @@ function convertHTML(src) {
 			}
 			if(tag.tagName == 'script'){
 				if('src' in tag.attributes) {
-					resource = '%js.' + getResourceName(tag.attributes.src) + '%';
-					result += capture[0].replace(tag.attributes.src, resource);
+					var filepath = tag.attributes.src;
+					if(filepath.substr(0,4) == 'http' || filepath.substr(0,2) == '//'){
+						result += capture[0];
+					}else{
+						resource = '%js.' + getResourceName(tag.attributes.src) + '%';
+						result += capture[0].replace(tag.attributes.src, resource);
+					}
 					src = src.substring(capture.index + capture[0].length);
 				}else{
 					result += capture[0];
@@ -88,14 +105,26 @@ function convertHTML(src) {
 				continue;
 			}
 			if('href' in tag.attributes || 'src' in tag.attributes){
+				var filepath;
+				
 				if('href' in tag.attributes) {
-					if(path.extname(tag.attributes.href) == ".css"){
+					filepath = tag.attributes.href;
+				} else if('src' in tag.attributes) {
+					filepath = tag.attributes.src;
+				}
+				
+				if('href' in tag.attributes) { 
+					if(filepath.substr(0,4) == 'http' || filepath.substr(0,2) == '//'){
+						resource = '';
+					}else if(path.extname(tag.attributes.href) == ".css"){
 						resource = '%css.' + getResourceName(tag.attributes.href) + '%';
 					}else if(tag.tagName != 'a'){
 						resource = '%' + getResourceName(tag.attributes.href) + '%';
 					}
 				} else if('src' in tag.attributes) {
-					if(path.extname(tag.attributes.src) == ".js"){
+					if(filepath.substr(0,4) == 'http' || filepath.substr(0,2) == '//'){
+						resource = '';
+					}else if(path.extname(tag.attributes.src) == ".js"){
 						resource = '%js.' + getResourceName(tag.attributes.src) + '%';
 					}
 				}
@@ -125,14 +154,21 @@ function convertCSS(src) {
 	var reg = /url\(('|")?([^'"\)]+)('|")?\)?/;
 	var capture;
 	var result = '';
+	var filepath = '';
 
 	while(src){
 		if(capture = reg.exec(src)){
 			result += src.substr(0,capture.index);
 			var target = capture[0];
-			var resource = getResourceName(capture[2]);
-			setResource(capture[2]);
-			result += target.replace(capture[2],'%'+resource+'%');
+			var filepath = capture[2];
+
+			if(filepath.substr(0,4) == 'http' || filepath.substr(0,2) == '//'){
+				result += target;
+			}else{
+				var resource = getResourceName(filepath);
+				setResource(filepath);
+				result += target.replace(filepath,'%'+resource+'%');
+			}
 			src = src.substring(capture.index + capture[0].length);
 			continue;
 		}
@@ -322,6 +358,7 @@ wr2conv.getResourceReport = function(){
 	report += " Site resource\n";
 	report += "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n\n";
 	if(info.site.length){
+		info.site.sort();
 		info.site.forEach(function(value,index,array){
 			report += "  " + value + "\n";
 		});
@@ -341,6 +378,7 @@ wr2conv.getResourceReport = function(){
 		report += " " + src + "\n";
 		report += "----------------------------------------------------------------\n";
 		if(files.length) {
+			files.sort();
 			files.forEach(function(value,index,array){
 				report += "  " + value + "\n";
 			});
