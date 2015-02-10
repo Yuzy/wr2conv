@@ -1,6 +1,6 @@
 'use strict';
 
-var version = '0.1.0';
+var version = '0.2.4';
 
 if(!path){
 	var path = require('path');
@@ -225,19 +225,32 @@ function resolveTag(tag){
 			var key = '';
 			var value;
 			var prev_key = '';
+			var close = true;
 			for(var i in attr){
 				var string = attr[i];
 				var keyValue = string.split('=');
 				if(keyValue.length > 1){
+					close = false;
 					key = keyValue.shift();
 					value = keyValue.join('=').replace(/^('|")(.*)/,'$2').replace(/^(.*)('|")$/,'$1');
 					result.attributes[key] = value;
 					prev_key = key;
-				}else{
 					if(string.substr(-1,1) == '"'){
-						result.attributes[prev_key] += " "+string.replace(/^('|")?(.*[^\\])('|")/,'$2');;
+						close = true;
+					}
+				}else{
+					if(string == '"') {
+						result.attributes[prev_key] += " ";
+						close = true;
+					}else if(string.substr(-1,1) == '"'){
+						result.attributes[prev_key] += " " + string.replace(/^('|")?(.*[^\\])('|")/, '$2');
+						close = true;
 					}else{
-						result.attributes[keyValue.shift()] = null;
+						if(close){
+							result.attributes[keyValue.shift()] = null;
+						}else{
+							result.attributes[prev_key] += " " + string.replace(/^('|")?(.*[^\\])('|")/, '$2');
+						}
 					}
 				}
 			}
