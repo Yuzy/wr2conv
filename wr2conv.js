@@ -55,7 +55,7 @@ function convertHTML(src) {
 						}else if(key == 'width' || key == 'height') {
 							keyValue.push(key + '="%' + key + '(' + resource + ')%"');
 						}else{
-							if(tag.attributes[key]){
+							if(tag.attributes[key] !== null){
 								keyValue.push(key + '="' + tag.attributes[key] + '"');
 							}else{
 								keyValue.push(key);
@@ -222,11 +222,24 @@ function resolveTag(tag){
 			result.xhtml = '/';
 		}
 		if(attr.length){
-			for(var i in attr) {
-				var keyValue = attr[i].split('=');
-				var key = keyValue.shift();
-				var value = keyValue.join('=').replace(/^('|")(.*)('|")/,'$2');
-				result.attributes[key] = value;
+			var key = '';
+			var value;
+			var prev_key = '';
+			for(var i in attr){
+				var string = attr[i];
+				var keyValue = string.split('=');
+				if(keyValue.length > 1){
+					key = keyValue.shift();
+					value = keyValue.join('=').replace(/^('|")(.*)/,'$2').replace(/^(.*)('|")$/,'$1');
+					result.attributes[key] = value;
+					prev_key = key;
+				}else{
+					if(string.substr(-1,1) == '"'){
+						result.attributes[prev_key] += " "+string.replace(/^('|")?(.*[^\\])('|")/,'$2');;
+					}else{
+						result.attributes[keyValue.shift()] = null;
+					}
+				}
 			}
 		}
 		return result;
