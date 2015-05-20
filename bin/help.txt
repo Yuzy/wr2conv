@@ -6,5 +6,6 @@ OPTIONS
     -o,   --output            set output directory
     -v,   --version           show version
     -d,   --dry               dry run
-    -c,   --check-resource    check resources(images)
+    -c,   --check-resource    check resources (images)
+    -s,   --stdout            output to stdout (not save to file)
 
