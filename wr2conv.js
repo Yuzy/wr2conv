@@ -88,7 +88,7 @@ function convertHTML(src) {
 					if(filepath.substr(0,4) == 'http' || filepath.substr(0,2) == '//'){
 						result += capture[0];
 					}else{
-						resource = '%js.' + getResourceName(tag.attributes.src) + '%';
+						resource = '%' + getResourceName(tag.attributes.src) + '%';
 						result += capture[0].replace(tag.attributes.src, resource);
 					}
 					src = src.substring(capture.index + capture[0].length);
@@ -116,8 +116,6 @@ function convertHTML(src) {
 				if('href' in tag.attributes) { 
 					if(filepath.substr(0,4) == 'http' || filepath.substr(0,2) == '//'){
 						resource = '';
-					}else if(path.extname(tag.attributes.href) == ".css"){
-						resource = '%css.' + getResourceName(tag.attributes.href) + '%';
 					}else if(tag.tagName != 'a'){
 						resource = '%' + getResourceName(tag.attributes.href) + '%';
 					}
@@ -125,7 +123,7 @@ function convertHTML(src) {
 					if(filepath.substr(0,4) == 'http' || filepath.substr(0,2) == '//'){
 						resource = '';
 					}else if(path.extname(tag.attributes.src) == ".js"){
-						resource = '%js.' + getResourceName(tag.attributes.src) + '%';
+						resource = '%' + getResourceName(tag.attributes.src) + '%';
 					}
 				}
 				if(resource){
@@ -202,8 +200,8 @@ function setResource(src){
 }
 
 function getResourceName(filepath){
-	var file = path.basename(filepath,path.extname(filepath));
-	return file.replace(/-/g,'_').replace(/\./,'_');
+	var file = path.basename(filepath);
+	return file.replace(/[-\.]/g,'_');
 }
 
 function resolveTag(tag){
