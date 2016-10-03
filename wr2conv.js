@@ -88,7 +88,22 @@ function convertHTML(src) {
 					if(filepath.substr(0,4) == 'http' || filepath.substr(0,2) == '//'){
 						result += capture[0];
 					}else{
-						resource = '%' + getResourceName(tag.attributes.src) + '%';
+						resource = getResourceName(tag.attributes.src) + '%';
+						if(conv_options.wr2var){
+							switch(conv_options.wr2var){
+								case '2.6':
+								case 'old':
+									resource = '%js.' + resource;
+									break;
+								case '2.7':
+								case 'new':
+								default:
+									resource = '%' + resource;
+									break;
+							}
+						}else{
+							resource = '%' + resource;
+						}
 						result += capture[0].replace(tag.attributes.src, resource);
 					}
 					src = src.substring(capture.index + capture[0].length);
@@ -117,13 +132,47 @@ function convertHTML(src) {
 					if(filepath.substr(0,4) == 'http' || filepath.substr(0,2) == '//'){
 						resource = '';
 					}else if(tag.tagName != 'a'){
-						resource = '%' + getResourceName(tag.attributes.href) + '%';
+						resource = getResourceName(tag.attributes.href) + '%';
+						if(path.extname(tag.attributes.href) == ".css") {
+							if(conv_options.wr2var){
+								switch(conv_options.wr2var){
+									case '2.6':
+									case 'old':
+										resource = '%css.' + resource;
+										break;
+									case '2.7':
+									case 'new':
+									default:
+										resource = '%' + resource;
+										break;
+								}
+							}else{
+								resource = '%' + resource;
+							}
+						}else{
+							resource = '%' + resource;
+						}
 					}
 				} else if('src' in tag.attributes) {
 					if(filepath.substr(0,4) == 'http' || filepath.substr(0,2) == '//'){
 						resource = '';
 					}else if(path.extname(tag.attributes.src) == ".js"){
-						resource = '%' + getResourceName(tag.attributes.src) + '%';
+						resource = getResourceName(tag.attributes.src) + '%';
+						if(conv_options.wr2var){
+							switch(conv_options.wr2var){
+								case '2.6':
+								case 'old':
+									resource = '%js.' + resource;
+									break;
+								case '2.7':
+								case 'new':
+								default:
+									resource = '%' + resource;
+									break;
+							}
+						}else{
+							resource = '%' + resource;
+						}
 					}
 				}
 				if(resource){
@@ -200,8 +249,26 @@ function setResource(src){
 }
 
 function getResourceName(filepath){
-	var file = path.basename(filepath);
-	return file.replace(/[-\.]/g,'_');
+	var file,replace;
+	if(conv_options.wr2var){
+		switch(conv_options.wr2var){
+			case '2.6':
+			case 'old':
+				file = path.basename(filepath,path.extname(filepath));
+				replace = file.replace(/-/g,'_').replace(/\./,'_');
+				break;
+			case '2.7':
+			case 'new':
+			default:
+				file = path.basename(filepath);
+				replace = file.replace(/[-\.]/g,'_');
+				break;
+		}
+	}else{
+		file = path.basename(filepath);
+		replace = file.replace(/[-\.]/g,'_');
+	}
+	return replace;
 }
 
 function resolveTag(tag){
