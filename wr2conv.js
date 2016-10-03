@@ -89,8 +89,8 @@ function convertHTML(src) {
 						result += capture[0];
 					}else{
 						resource = getResourceName(tag.attributes.src) + '%';
-						if(conv_options.wr2var){
-							switch(conv_options.wr2var){
+						if(conv_options.wr2ver){
+							switch(conv_options.wr2ver){
 								case '2.6':
 								case 'old':
 									resource = '%js.' + resource;
@@ -134,8 +134,8 @@ function convertHTML(src) {
 					}else if(tag.tagName != 'a'){
 						resource = getResourceName(tag.attributes.href) + '%';
 						if(path.extname(tag.attributes.href) == ".css") {
-							if(conv_options.wr2var){
-								switch(conv_options.wr2var){
+							if(conv_options.wr2ver){
+								switch(conv_options.wr2ver){
 									case '2.6':
 									case 'old':
 										resource = '%css.' + resource;
@@ -158,8 +158,8 @@ function convertHTML(src) {
 						resource = '';
 					}else if(path.extname(tag.attributes.src) == ".js"){
 						resource = getResourceName(tag.attributes.src) + '%';
-						if(conv_options.wr2var){
-							switch(conv_options.wr2var){
+						if(conv_options.wr2ver){
+							switch(conv_options.wr2ver){
 								case '2.6':
 								case 'old':
 									resource = '%js.' + resource;
@@ -250,8 +250,8 @@ function setResource(src){
 
 function getResourceName(filepath){
 	var file,replace;
-	if(conv_options.wr2var){
-		switch(conv_options.wr2var){
+	if(conv_options.wr2ver){
+		switch(conv_options.wr2ver){
 			case '2.6':
 			case 'old':
 				file = path.basename(filepath,path.extname(filepath));

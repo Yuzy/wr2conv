@@ -49,7 +49,7 @@ function help(){
 
 function main(arg, callback){
 	argv = minimist(process.argv.slice(2), {
-		string: ['output','ext','basedir', 'wr2var'],
+		string: ['output','ext','basedir', 'wr2ver'],
 		boolean: [
 			'help',
 			'version',
@@ -63,7 +63,7 @@ function main(arg, callback){
 			v: 'version',
 			d: 'dry',
 			c: 'check-resource',
-			w: 'wr2var',
+			w: 'wr2ver',
 			e: 'ext',
 			s: 'stdout',
 			b: 'basedir'
@@ -92,8 +92,8 @@ function main(arg, callback){
 		wr2conv.setOptions({basedir: path.resolve(argv.basedir)});
 	}
 
-	if(argv.wr2var){
-		wr2conv.setOptions({wr2var: argv.wr2var});
+	if(argv.wr2ver){
+		wr2conv.setOptions({wr2ver: argv.wr2ver});
 	}
 	var files = argv._.slice();
 
